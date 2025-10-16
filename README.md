@@ -1,9 +1,10 @@
 
+
 ![Cruz Engine Logo](https://iili.io/KkA8rBa.png)
 
 # 2D and 3D cross-platform game engine
 
-Cruz Engine is a concept for a modern, cross-platform **2D and 3D game engine**, running in the browser and natively. The project combines **performance**, **full control over resources and code**, **advanced analytical tools**, and a **flexible scripting environment**.
+[Cruz Engine](https://devsuperking.github.io/Cruz/) is a concept for a modern, cross-platform **2D and 3D game engine**, running in the browser and natively. The project combines **performance**, **full control over resources and code**, **advanced analytical tools**, and a **flexible scripting environment**.
 
 ## Free, open source and community-driven
 - Creating game logic in **Cruza (.crz)**, **Visual Scripting**, or any language compiling to WASM.
