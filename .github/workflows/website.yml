@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'website/**'
   workflow_dispatch:
 
 permissions:
@@ -20,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Pages
@@ -30,5 +32,6 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: website
+
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
