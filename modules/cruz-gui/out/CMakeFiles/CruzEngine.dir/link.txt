@@ -1,1 +1,0 @@
-/usr/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/CruzEngine.dir/link.d CMakeFiles/CruzEngine.dir/src/main.cpp.o -o CruzEngine  thirdparty/glfw/src/libglfw3.a /usr/lib/x86_64-linux-gnu/librt.a -lm -ldl

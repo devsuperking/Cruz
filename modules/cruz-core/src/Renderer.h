@@ -1,8 +1,14 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <iostream>
+#pragma once
 
-namespace Renderer
-{
+class Renderer {
+public:
+    // Uruchamia renderowanie prostego trójkąta
     void HelloTriangle();
-}
+
+private:
+#ifdef __EMSCRIPTEN__
+    static void renderLoop();
+    static unsigned int VAO;
+    static unsigned int shaderProgram;
+#endif
+};

@@ -2,7 +2,8 @@
 
 int main() {
 
-    Renderer::HelloTriangle();
+    Renderer renderer;
+    renderer.HelloTriangle();
 
     return 0;
 }
