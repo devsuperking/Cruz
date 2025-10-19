@@ -1,3 +1,6 @@
 [submodule "thirdparty/emsdk"]
 	path = thirdparty/emsdk
 	url = https://github.com/emscripten-core/emsdk.git
+[submodule "modules/cruz-gui/thirdparty/glfw"]
+	path = modules/cruz-gui/thirdparty/glfw
+	url = https://github.com/glfw/glfw.git
