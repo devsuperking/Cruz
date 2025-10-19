@@ -1,3 +1,0 @@
-[submodule "thirdparty/emscripten"]
-	path = thirdparty/emscripten
-	url = https://github.com/emscripten-core/emscripten.git
