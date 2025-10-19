@@ -10,7 +10,7 @@
             "cStandard": "c17",
             "cppStandard": "c++17",
             "intelliSenseMode": "linux-clang-x64",
-            "compileCommands": "${workspaceFolder}/modules/cruz-gui/out/build/compile_commands.json"
+            "compileCommands": "${workspaceFolder}/modules/out/build/compile_commands.json"
         }
     ],
     "version": 4
