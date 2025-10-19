@@ -12,6 +12,7 @@ MODE = sys.argv[1]
 ARGS = sys.argv[2:]
 
 BUILD_DIR = "out/build"
+DEST_DIR = os.path.join("..", "www", "editor")
 
 if os.path.exists(BUILD_DIR):
     shutil.rmtree(BUILD_DIR)
@@ -25,8 +26,13 @@ if MODE == "emscripten":
     if not EMSDK:
         print("Error: EMSDK environment variable is not set")
         sys.exit(1)
-    em_env = subprocess.check_output(f"source {EMSDK}/emsdk_env.sh && env", shell=True, executable="/bin/bash")
+
+    em_env = subprocess.check_output(
+        f"source {EMSDK}/emsdk_env.sh && env",
+        shell=True, executable="/bin/bash"
+    )
     env = dict(line.decode().split("=", 1) for line in em_env.splitlines() if b"=" in line)
+
     cmake_cmd = [
         "cmake", "-S", ".", "-B", BUILD_DIR,
         "-DCMAKE_BUILD_TYPE=Release",
@@ -36,21 +42,32 @@ if MODE == "emscripten":
     run(cmake_cmd, cwd=os.getcwd(), env=env)
     run(["cmake", "--build", BUILD_DIR, "--config", "Release"], cwd=os.getcwd(), env=env)
 
-    html_file = os.path.join(BUILD_DIR, "CruzGui.html")
-    if not os.path.exists(html_file):
-        print(f"Error: {html_file} not found")
-        sys.exit(1)
+    if not os.path.exists(DEST_DIR):
+        os.makedirs(DEST_DIR, exist_ok=True)
 
-    with open(html_file, "r") as f:
-        html = f.read()
+    for filename in os.listdir(BUILD_DIR):
+        if filename.endswith((".html", ".js", ".wasm")):
+            src_path = os.path.join(BUILD_DIR, filename)
+            dst_path = os.path.join(DEST_DIR, filename)
+            if filename.endswith(".html"):
+                dst_path = os.path.join(DEST_DIR, "index.html")
+            with open(src_path, "r" if filename.endswith(".html") else "rb") as f:
+                content = f.read()
+            if filename.endswith(".html"):
+                content = content.replace(
+                    "<canvas", "<canvas style='position:absolute;top:0;left:0;width:100%;height:100%;'"
+                )
+                if "<head>" in content:
+                    content = content.replace(
+                        "<head>",
+                        "<head><style>html,body{margin:0;padding:0;overflow:hidden;height:100%;}</style>"
+                    )
+                with open(dst_path, "w") as f:
+                    f.write(content)
+            else:
+                shutil.copy2(src_path, dst_path)
 
-    html = html.replace("<canvas", "<canvas style='position:absolute;top:0;left:0;width:100%;height:100%;'")
-    if "<head>" in html:
-        html = html.replace("<head>", "<head><style>html,body{margin:0;padding:0;overflow:hidden;height:100%;}</style>")
-
-    with open(html_file, "w") as f:
-        f.write(html)
-
+    html_file = os.path.join(DEST_DIR, "index.html")
     if shutil.which("emrun"):
         run(["emrun", html_file], env=env)
     else:
