@@ -3,5 +3,5 @@ project(CruzEngine)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_subdirectory(cruz-core)
-add_subdirectory(cruz-gui)
+add_subdirectory(src/CruzEngine)
+add_subdirectory(src/CruzEditor)

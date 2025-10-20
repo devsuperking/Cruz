@@ -28,7 +28,7 @@ if MODE == "emscripten":
     run(["emcmake", "cmake", "--preset", "emscripten"], env=env)
     run(["cmake", "--build", "--preset", "emscripten"], env=env)
 
-    BUILD_DIR = "out/emscripten"
+    BUILD_DIR = "out/web"
     DEST_DIR = os.path.join("..", "www", "editor")
     if not os.path.exists(DEST_DIR):
         os.makedirs(DEST_DIR, exist_ok=True)

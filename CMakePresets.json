@@ -19,7 +19,7 @@
 			"name": "emscripten",
 			"displayName": "Emscripten WebAssembly Build",
 			"generator": "Ninja",
-			"binaryDir": "out/emscripten",
+			"binaryDir": "out/web",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Release",
 				"CMAKE_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/emscripten.cmake",
