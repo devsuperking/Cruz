@@ -26,8 +26,9 @@ else()
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-    add_subdirectory(thirdparty/glfw)
-    add_subdirectory(thirdparty/glad)
+    add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/glfw ${CMAKE_BINARY_DIR}/thirdparty/glfw)
+    add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/glad ${CMAKE_BINARY_DIR}/thirdparty/glad)
+
     target_link_libraries(CruzCore PUBLIC glfw glad)
 endif()
 
