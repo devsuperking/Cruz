@@ -21,13 +21,18 @@ void WebGlBackend::HelloTriangle()
 		0.5f, -0.5f, 0.0f};
 
 	const char *vertexShaderSource = R"(#version 300 es
-layout(location = 0)  in vec3 aPos;
-void main() { gl_Position = vec4(aPos, 1.0); })";
+layout(location = 0) in vec3 aPos;
+uniform float uAspect;
+void main() {
+    gl_Position = vec4(aPos.x / uAspect, aPos.y, aPos.z, 1.0);
+})";
 
 	const char *fragmentShaderSource = R"(#version 300 es
 precision mediump float;
 out vec4 FragColor;
-void main() { FragColor = vec4(1.0, 0.5, 0.2, 1.0); })";
+void main() {
+    FragColor = vec4(1.0, 0.5, 0.2, 1.0);
+})";
 
 	EMSCRIPTEN_WEBGL_CONTEXT_HANDLE context;
 	EmscriptenWebGLContextAttributes attr;
@@ -47,8 +52,11 @@ void main() { FragColor = vec4(1.0, 0.5, 0.2, 1.0); })";
 	}
 	emscripten_webgl_make_context_current(context);
 
-	int width, height;
-	emscripten_get_canvas_element_size("#canvas", &width, &height);
+	double cssWidth, cssHeight;
+	emscripten_get_element_css_size("#canvas", &cssWidth, &cssHeight);
+	int width = static_cast<int>(cssWidth * emscripten_get_device_pixel_ratio());
+	int height = static_cast<int>(cssHeight * emscripten_get_device_pixel_ratio());
+	emscripten_set_canvas_element_size("#canvas", width, height);
 	glViewport(0, 0, width, height);
 
 	emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr,
@@ -81,6 +89,11 @@ void main() { FragColor = vec4(1.0, 0.5, 0.2, 1.0); })";
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
+	aspectLoc = glGetUniformLocation(shaderProgram, "uAspect");
+
+	glUseProgram(shaderProgram);
+	glUniform1f(aspectLoc, static_cast<float>(width) / static_cast<float>(height));
+
 	emscripten_set_main_loop(RenderLoopCallback, 0, 1);
 }
 
@@ -89,18 +102,34 @@ void WebGlBackend::RenderLoop()
 	if (!instance)
 		return;
 
+	double cssWidth, cssHeight;
+	emscripten_get_element_css_size("#canvas", &cssWidth, &cssHeight);
+	int width = static_cast<int>(cssWidth * emscripten_get_device_pixel_ratio());
+	int height = static_cast<int>(cssHeight * emscripten_get_device_pixel_ratio());
+	emscripten_set_canvas_element_size("#canvas", width, height);
+	glViewport(0, 0, width, height);
+
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glUseProgram(instance->shaderProgram);
+	glUniform1f(instance->aspectLoc, static_cast<float>(width) / static_cast<float>(height));
+
 	glBindVertexArray(instance->VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 EM_BOOL WebGlBackend::ViewportResizeCallback(int eventType, const EmscriptenUiEvent *e, void *userData)
 {
-	int width, height;
-	emscripten_get_canvas_element_size("#canvas", &width, &height);
+	if (!instance)
+		return EM_TRUE;
+
+	double cssWidth, cssHeight;
+	emscripten_get_element_css_size("#canvas", &cssWidth, &cssHeight);
+	int width = static_cast<int>(cssWidth * emscripten_get_device_pixel_ratio());
+	int height = static_cast<int>(cssHeight * emscripten_get_device_pixel_ratio());
+	emscripten_set_canvas_element_size("#canvas", width, height);
 	glViewport(0, 0, width, height);
+
 	return EM_TRUE;
 }

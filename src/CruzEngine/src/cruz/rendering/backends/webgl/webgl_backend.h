@@ -12,7 +12,9 @@ public:
 
 private:
   static EM_BOOL ViewportResizeCallback(int eventType, const EmscriptenUiEvent *e, void *userData);
+  void ResizeCanvas();
 
   unsigned int shaderProgram = 0;
   unsigned int VAO = 0;
+  GLint aspectLoc = -1; // uniform location for aspect ratio
 };
