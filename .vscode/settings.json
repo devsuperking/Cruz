@@ -1,7 +1,6 @@
 {
-    "files.associations": {
-        "iostream": "cpp",
-        "ios": "cpp",
-        "chrono": "cpp"
-    }
+	"cmake.sourceDirectory": "/home/mateusz/Desktop/Cruz/modules",
+	"files.associations": {
+		"iostream": "cpp"
+	}
 }

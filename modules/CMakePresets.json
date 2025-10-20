@@ -1,0 +1,41 @@
+{
+	"version": 3,
+	"cmakeMinimumRequired": {
+		"major": 3,
+		"minor": 21
+	},
+	"configurePresets": [
+		{
+			"name": "desktop",
+			"displayName": "Desktop Build",
+			"generator": "Ninja",
+			"binaryDir": "out/desktop",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+			}
+		},
+		{
+			"name": "emscripten",
+			"displayName": "Emscripten WebAssembly Build",
+			"generator": "Ninja",
+			"binaryDir": "out/emscripten",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"CMAKE_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/emscripten.cmake",
+				"CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+				"BUILD_TARGET": "emscripten"
+			}
+		}
+	],
+	"buildPresets": [
+		{
+			"name": "desktop",
+			"configurePreset": "desktop"
+		},
+		{
+			"name": "emscripten",
+			"configurePreset": "emscripten"
+		}
+	]
+}
