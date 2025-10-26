@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(CruzCore)
 
-file(GLOB_RECURSE CORE_SOURCES src/cruz/common/*.cpp src/cruz/common/*.h)
+file(GLOB_RECURSE CORE_SOURCES src/cruz/core/*.cpp src/cruz/core/*.h)
 
 if(NOT CORE_SOURCES)
     message(FATAL_ERROR "No source files found in cruz-core/src")
@@ -35,7 +35,13 @@ endif()
 if(EMSCRIPTEN)
     add_subdirectory(src/cruz/rendering/backends/webgl)
     target_link_libraries(CruzCore PUBLIC BackendWebGL)
+
+    add_subdirectory(src/cruz/platform/web)
+    target_link_libraries(CruzCore PUBLIC WebPlatform)
 else()
     add_subdirectory(src/cruz/rendering/backends/opengl)
     target_link_libraries(CruzCore PUBLIC BackendOpenGL)
+
+    add_subdirectory(src/cruz/platform/win32)
+    target_link_libraries(CruzCore PUBLIC WindowsPlatform)
 endif()
