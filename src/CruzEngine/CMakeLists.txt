@@ -33,13 +33,13 @@ else()
 endif()
 
 if(EMSCRIPTEN)
-    add_subdirectory(src/cruz/rendering/backends/webgl)
+    add_subdirectory(src/cruz/rendering/webgl)
     target_link_libraries(CruzCore PUBLIC BackendWebGL)
 
     add_subdirectory(src/cruz/platform/web)
     target_link_libraries(CruzCore PUBLIC WebPlatform)
 else()
-    add_subdirectory(src/cruz/rendering/backends/opengl)
+    add_subdirectory(src/cruz/rendering/opengl)
     target_link_libraries(CruzCore PUBLIC BackendOpenGL)
 
     add_subdirectory(src/cruz/platform/win32)

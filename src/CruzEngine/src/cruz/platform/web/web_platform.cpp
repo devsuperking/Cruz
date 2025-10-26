@@ -18,3 +18,7 @@ void WebPlatform::GetFramebufferSize(int& width, int& height) {
     emscripten_set_canvas_element_size("#canvas", width, height);
 }
 
+void WebPlatform::SetMainLoop(void (*func)())
+{
+    emscripten_set_main_loop(func, 0, true);
+}

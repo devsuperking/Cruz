@@ -18,17 +18,13 @@ public:
     void MakeContextCurrent() override;
     int GetKeyPressed(int key) override;
     void* GetProcAddress() override;
-
-    void SetFramebufferSizeCallback(std::function<void(int, int)> cb) { framebufferCallback = cb; }
+    void SetResizeCallback(std::function<void(int,int)> func) override;
 
     GLFWwindow* GetWindow() { return window; }
 
 private:
     void InitializeWindow(int width, int height, const std::string& title);
-    void ResizeEvent(int width, int height) {
-        if (framebufferCallback) framebufferCallback(width, height);
-    }
 
     GLFWwindow* window = nullptr;
-    std::function<void(int,int)> framebufferCallback;
+    std::function<void(int,int)> resizeCallback;
 };

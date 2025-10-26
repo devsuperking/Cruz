@@ -13,5 +13,5 @@ public:
     virtual void GetFramebufferSize(int& width, int& height) = 0;
     virtual int GetKeyPressed(int key) = 0;
     virtual void* GetProcAddress() = 0;
-    virtual void SetFramebufferSizeCallback(std::function<void(int,int)> cb) {}
+    virtual void SetResizeCallback(std::function<void(int,int)> func) = 0;
 };

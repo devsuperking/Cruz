@@ -41,10 +41,18 @@ void WindowsPlatform::InitializeWindow(int width, int height, const std::string&
     if (!window) { std::cerr << "Failed to create GLFW window\n"; glfwTerminate(); return; }
 
     glfwSetWindowUserPointer(window, this);
+}
 
-    glfwSetFramebufferSizeCallback(window, [](GLFWwindow* win, int w, int h) {
-        WindowsPlatform* plat = reinterpret_cast<WindowsPlatform*>(glfwGetWindowUserPointer(win));
-        if (plat) plat->ResizeEvent(w, h);
+void WindowsPlatform::SetResizeCallback(std::function<void(int,int)> func) {
+    resizeCallback = std::move(func);
+
+    glfwSetWindowUserPointer(window, this);
+
+    glfwSetFramebufferSizeCallback(window, [](GLFWwindow* win, int w, int h){
+        if(auto* plat = static_cast<WindowsPlatform*>(glfwGetWindowUserPointer(win))) {
+            if(plat->resizeCallback)
+                plat->resizeCallback(w,h);
+        }
     });
 }
 

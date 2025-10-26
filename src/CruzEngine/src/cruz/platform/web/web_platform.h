@@ -15,12 +15,9 @@ public:
     void GetFramebufferSize(int& width, int& height) override;
     void MakeContextCurrent() override {}
     int GetKeyPressed(int key) override { return 0; }
-
-    void SetFramebufferSizeCallback(std::function<void(int,int)> cb) override { framebufferCallback = cb; }
-
+    void SetMainLoop(void (*func)());
     void* GetProcAddress() override { return nullptr; }
 
 private:
     bool shouldClose = false;
-    std::function<void(int,int)> framebufferCallback;
 };
