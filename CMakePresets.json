@@ -4,10 +4,12 @@
 		"major": 3,
 		"minor": 21
 	},
+
 	"configurePresets": [
 		{
 			"name": "desktop",
-			"displayName": "Desktop Build",
+			"displayName": "Desktop (Default Compiler)",
+			"description": "Debug build using the system's default compiler (MSVC, GCC, or Clang).",
 			"generator": "Ninja",
 			"binaryDir": "out/desktop",
 			"cacheVariables": {
@@ -17,7 +19,8 @@
 		},
 		{
 			"name": "emscripten",
-			"displayName": "Emscripten WebAssembly Build",
+			"displayName": "WebAssembly (Emscripten)",
+			"description": "Release build targeting WebAssembly using the Emscripten toolchain.",
 			"generator": "Ninja",
 			"binaryDir": "out/web",
 			"cacheVariables": {
@@ -28,13 +31,16 @@
 			}
 		}
 	],
+
 	"buildPresets": [
 		{
 			"name": "desktop",
+			"displayName": "Build Desktop (Default)",
 			"configurePreset": "desktop"
 		},
 		{
 			"name": "emscripten",
+			"displayName": "Build WebAssembly",
 			"configurePreset": "emscripten"
 		}
 	]
