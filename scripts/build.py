@@ -5,23 +5,23 @@ import subprocess
 import platform
 import shutil
 import time
-from colorama import init, Fore, Style
 
-init(autoreset=True)
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+RED = "\033[91m"
+RESET = "\033[0m"
 
-GREEN = Fore.GREEN
-YELLOW = Fore.YELLOW
-RED = Fore.RED
-RESET = Style.RESET_ALL
+if platform.system() == "Windows":
+    os.system("")
 
 def log_info(msg):
-    print(f"{GREEN}{msg}{RESET}")
+    print(f"{GREEN}[INFO] {msg}{RESET}")
 
 def log_warn(msg):
-    print(f"{YELLOW}{msg}{RESET}")
+    print(f"{YELLOW}[WARN] {msg}{RESET}")
 
 def log_error(msg):
-    print(f"{RED}{msg}{RESET}")
+    print(f"{RED}[ERROR] {msg}{RESET}")
 
 def run(cmd, cwd=None, env=None, shell=None, check=True):
     if shell is None:
@@ -47,13 +47,10 @@ def get_emscripten_env():
     if not os.path.isdir(EMSDK):
         log_error("Emscripten SDK not found in ../thirdparty/emscripten-sdk")
         sys.exit(1)
-
     os.environ["EMSDK"] = EMSDK
     env = os.environ.copy()
     system = platform.system()
-
     log_info(">>> Activating Emscripten SDK...")
-
     if system == "Windows":
         subprocess.check_call(f'cmd /c "{EMSDK}\\emsdk.bat activate latest"', shell=True)
         em_env_cmd = f'cmd /c "{EMSDK}\\emsdk_env.bat && set"'
@@ -68,7 +65,6 @@ def get_emscripten_env():
         for line in em_env.splitlines():
             key, _, value = line.decode(errors='ignore').partition("=")
             env[key] = value
-
     log_info(">>> Emscripten environment loaded.")
     return env
 
@@ -81,7 +77,6 @@ def build_emscripten():
         build_dir = "out/web"
         dest_dir = os.path.join("www", "editor")
         os.makedirs(dest_dir, exist_ok=True)
-
         for filename in os.listdir(build_dir):
             if filename.endswith((".html", ".js", ".wasm")):
                 src_path = os.path.join(build_dir, filename)
@@ -104,17 +99,42 @@ def build_emscripten():
         log_error(f"Emscripten build failed after {elapsed:.2f}s")
         raise e
 
-def build_desktop_windows(config="Debug"):
+def build_desktop_windows(config="Debug", compiler="msvc"):
     start_time = time.time()
     try:
-        build_dir = os.path.join("out", "desktop")
+        base_build_dir = os.path.join("out", "desktop")
+        if compiler == "msvc":
+            build_dir = os.path.join(base_build_dir, "msvc")
+        else:
+            build_dir = os.path.join(base_build_dir, "clang")
         os.makedirs(build_dir, exist_ok=True)
-        run(["cmake", "-G", "Visual Studio 17 2022", "-A", "x64", "-S", ".", "-B", build_dir])
-        run(["cmake", "--build", build_dir, "--config", config])
-        
-        exe_file = os.path.join(build_dir, "bin", config, "CruzGui.exe")
+        exe_file = None
+        if compiler == "msvc":
+            run([
+                "cmake", "-G", "Visual Studio 17 2022", "-A", "x64",
+                "-S", ".", "-B", build_dir
+            ])
+            run(["cmake", "--build", build_dir, "--config", config])
+            
+            exe_file = os.path.join(build_dir, "bin", config, "CruzGui.exe")
+        elif compiler == "clang":
+            run([
+                "cmake", "-G", "Ninja",
+                f"-DCMAKE_C_COMPILER=clang",
+                f"-DCMAKE_CXX_COMPILER=clang++",
+                f"-DCMAKE_BUILD_TYPE={config}",
+                "-S", ".", "-B", build_dir
+            ])
+            build_cmd = ["cmake", "--build", build_dir]
+            if config.lower() == "release":
+                build_cmd += ["--", "-j", str(os.cpu_count())]
+            run(build_cmd)
+            exe_file = os.path.join(build_dir, "bin", "CruzGui.exe")
+        else:
+            log_error(f"Unknown compiler: {compiler}")
+            sys.exit(1)
         if not os.path.exists(exe_file):
-            log_error(f"{exe_file} not found")
+            log_error(f"{exe_file} not found. Check build configuration and compiler output.")
             sys.exit(1)
         elapsed = time.time() - start_time
         log_info(f"Desktop build completed in {elapsed:.2f}s: {exe_file}")
@@ -145,16 +165,14 @@ def build_desktop_linux(config="Debug"):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <emscripten|desktop> [--config CONFIG] [--run|-r] [args...]")
+        print(f"Usage: {sys.argv[0]} <emscripten|desktop> [--config CONFIG] [--compiler COMPILER] [--run|-r] [args...]")
         sys.exit(1)
-
     mode = sys.argv[1]
     args = sys.argv[2:]
-
     config = "Debug"
+    compiler = "msvc"
     run_after_build = False
     app_args = []
-
     while args:
         arg = args.pop(0)
         if arg == "--run" or arg == "-r":
@@ -162,16 +180,17 @@ if __name__ == "__main__":
         elif arg == "--config":
             if args:
                 config = args.pop(0)
+        elif arg == "--compiler":
+            if args:
+                compiler = args.pop(0)
         else:
             app_args.append(arg)
-
     system = platform.system()
-
     if mode == "emscripten":
         build_emscripten()
     elif mode == "desktop":
         if system == "Windows":
-            exe = build_desktop_windows(config)
+            exe = build_desktop_windows(config, compiler)
         else:
             exe = build_desktop_linux(config)
         if run_after_build:

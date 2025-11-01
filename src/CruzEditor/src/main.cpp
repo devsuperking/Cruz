@@ -9,13 +9,22 @@ struct Renderer {
     const char* vertexShaderSrc;
     const char* fragmentShaderSrc;
 
+    void Initialize(Application& app) {
+        if (!initialized) {
+            auto backend = app.GetBackend();
+            shader = backend->CreateShader(vertexShaderSrc, fragmentShaderSrc);
+
+            backend->UploadVertices(vertices);
+
+            initialized = true;
+        }
+    }
+
     void Update(Application& app, float dt) {
         auto backend = app.GetBackend();
 
-        if (!initialized) {
-            shader = backend->CreateShader(vertexShaderSrc, fragmentShaderSrc);
-            initialized = true;
-        }
+        if (!initialized)
+            Initialize(app);
 
         float clearColor[4] = { 0.25f, 0.1f, 0.1f, 1.0f };
         backend->Clear(clearColor);
@@ -23,7 +32,11 @@ struct Renderer {
         backend->UseShader(shader);
         backend->SetUniformMat4(shader, "uProjection", backend->GetProjection());
 
-        backend->Draw(vertices);
+        backend->DrawUploadedVertices();
+    }
+
+    ~Renderer() {
+        delete shader;
     }
 };
 
@@ -62,13 +75,11 @@ void main() { FragColor = vec4(1.0, 0.5, 0.3, 1.0); })";
     renderer.vertexShaderSrc = vertexShaderSrc;
     renderer.fragmentShaderSrc = fragmentShaderSrc;
 
-    // Ustawiamy callback
     app.SetUpdateCallback([&](float dt) {
         renderer.Update(app, dt);
     });
 
     app.Run();
 
-    delete renderer.shader;
     return 0;
 }

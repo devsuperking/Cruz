@@ -19,8 +19,17 @@ public:
     void SetUniformMat4(Shader* shader, const std::string& name, const Mat4& mat) override;
 
     void Draw(const std::vector<Vertex>& vertices) override;
+    void UploadVertices(const std::vector<Vertex>& vertices) override;
+    void DrawUploadedVertices() override;
+
     const Mat4& GetProjection() const override { return projection; }
+
+    ~GlBackend();
 
 private:
     Mat4 projection;
+
+    GLuint vao = 0;
+    GLuint vbo = 0;
+    GLsizei vertexCount = 0;
 };

@@ -16,7 +16,7 @@ void GlBackend::Initialize() {
     }
 
     glEnable(GL_MULTISAMPLE);
-    
+
     platform->SetResizeCallback([this](int width, int height) {
         std::cout << "New size: " << width << " x " << height << "\n";
         Resize(width, height);
@@ -33,7 +33,6 @@ void GlBackend::Resize(int width, int height) {
 
 void GlBackend::Update(float deltaTime) {
     if (!platform) return;
-
     if (platform->WindowShouldClose()) return;
     if (platform->GetKeyPressed(GLFW_KEY_ESCAPE))
         platform->SetWindowShouldClose(true);
@@ -57,7 +56,8 @@ void GlBackend::SetPipeline(const PipelineSettings& settings) {
     if (settings.blend) {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    } else {
+    }
+    else {
         glDisable(GL_BLEND);
     }
 }
@@ -85,19 +85,46 @@ void GlBackend::SetUniformMat4(Shader* shader, const std::string& name, const Ma
 void GlBackend::Draw(const std::vector<Vertex>& vertices) {
     if (vertices.empty()) return;
 
-    GLuint vao, vbo;
+    UploadVertices(vertices);
+    vertexCount = static_cast<GLsizei>(vertices.size());
+
+    DrawUploadedVertices();
+}
+
+void GlBackend::UploadVertices(const std::vector<Vertex>& verts) {
+    if (verts.empty()) return;
+
+    if (vao != 0) {
+        glDeleteBuffers(1, &vbo);
+        glDeleteVertexArrays(1, &vao);
+    }
+
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
 
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(Vertex), verts.data(), GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
-    glDeleteBuffers(1, &vbo);
-    glDeleteVertexArrays(1, &vao);
+    vertexCount = static_cast<GLsizei>(verts.size());
+}
+
+void GlBackend::DrawUploadedVertices() {
+    if (vao == 0) return;
+
+    glBindVertexArray(vao);
+    glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+    glBindVertexArray(0);
+}
+
+GlBackend::~GlBackend()
+{
+    if (vao != 0) glDeleteVertexArrays(1, &vao);
+    if (vbo != 0) glDeleteBuffers(1, &vbo);
 }
