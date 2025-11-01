@@ -14,6 +14,7 @@ Mat4 Mat4::Ortho(float left, float right, float bottom, float top, float near, f
     m.data[13] = -(top + bottom) / (top - bottom);
     m.data[14] = -(far + near) / (far - near);
     m.data[15] = 1.0f;
+
     return m;
 }
 

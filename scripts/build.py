@@ -1,68 +1,94 @@
 #!/usr/bin/env python3
 import os
 import sys
-import shutil
 import subprocess
 import platform
+import shutil
+import time
+from colorama import init, Fore, Style
 
-try:
-    if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <emscripten|desktop> [args...]")
+init(autoreset=True)
+
+GREEN = Fore.GREEN
+YELLOW = Fore.YELLOW
+RED = Fore.RED
+RESET = Style.RESET_ALL
+
+def log_info(msg):
+    print(f"{GREEN}{msg}{RESET}")
+
+def log_warn(msg):
+    print(f"{YELLOW}{msg}{RESET}")
+
+def log_error(msg):
+    print(f"{RED}{msg}{RESET}")
+
+def run(cmd, cwd=None, env=None, shell=None, check=True):
+    if shell is None:
+        shell = platform.system() == "Windows"
+    log_warn(f">>> Running: {' '.join(cmd) if isinstance(cmd, list) else cmd}")
+    start_time = time.time()
+    result = subprocess.run(cmd, cwd=cwd, env=env, shell=shell,
+                            capture_output=True, text=True)
+    elapsed = time.time() - start_time
+    if result.stdout:
+        print(result.stdout)
+    if result.stderr:
+        print(result.stderr)
+    if check and result.returncode != 0:
+        log_error(f"Command failed: {cmd} ({elapsed:.2f}s)")
+        raise subprocess.CalledProcessError(result.returncode, cmd)
+    log_info(f"Command completed in {elapsed:.2f}s")
+    return result
+
+def get_emscripten_env():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    EMSDK = os.path.abspath(os.path.join(script_dir, "../thirdparty/emscripten-sdk"))
+    if not os.path.isdir(EMSDK):
+        log_error("Emscripten SDK not found in ../thirdparty/emscripten-sdk")
         sys.exit(1)
 
-    MODE = sys.argv[1]
-    ARGS = sys.argv[2:]
+    os.environ["EMSDK"] = EMSDK
+    env = os.environ.copy()
+    system = platform.system()
 
-    def run(cmd, cwd=None, env=None, shell=False):
-        subprocess.check_call(cmd, cwd=cwd, env=env, shell=shell)
+    log_info(">>> Activating Emscripten SDK...")
 
-    def get_emscripten_env():
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        EMSDK = os.path.abspath(os.path.join(script_dir, "../thirdparty/emscripten-sdk"))
-        if not os.path.isdir(EMSDK):
-            print("Error: Emscripten SDK not found in ../thirdparty/emscripten-sdk")
-            sys.exit(1)
+    if system == "Windows":
+        subprocess.check_call(f'cmd /c "{EMSDK}\\emsdk.bat activate latest"', shell=True)
+        em_env_cmd = f'cmd /c "{EMSDK}\\emsdk_env.bat && set"'
+        em_env = subprocess.check_output(em_env_cmd, shell=True)
+        for line in em_env.splitlines():
+            key, _, value = line.decode(errors="ignore").partition("=")
+            env[key] = value
+    else:
+        subprocess.check_call(f"bash -c 'source {EMSDK}/emsdk_env.sh && {EMSDK}/emsdk activate latest'", shell=True)
+        em_env_cmd = f"bash -c 'source {EMSDK}/emsdk_env.sh && env'"
+        em_env = subprocess.check_output(em_env_cmd, shell=True, executable="/bin/bash")
+        for line in em_env.splitlines():
+            key, _, value = line.decode(errors='ignore').partition("=")
+            env[key] = value
 
-        os.environ["EMSDK"] = EMSDK
-        env = os.environ.copy()
-        system = platform.system()
+    log_info(">>> Emscripten environment loaded.")
+    return env
 
-        print(">>> Activating Emscripten SDK...")
-
-        if system == "Windows":
-            subprocess.check_call(f'cmd /c "{EMSDK}\\emsdk.bat activate latest"', shell=True)
-            em_env_cmd = f'cmd /c "{EMSDK}\\emsdk_env.bat && set"'
-            em_env = subprocess.check_output(em_env_cmd, shell=True)
-            for line in em_env.splitlines():
-                key, _, value = line.decode(errors="ignore").partition("=")
-                env[key] = value
-        else:
-            subprocess.check_call(f"bash -c 'source {EMSDK}/emsdk_env.sh && {EMSDK}/emsdk activate latest'", shell=True)
-            em_env_cmd = f"bash -c 'source {EMSDK}/emsdk_env.sh && env'"
-            em_env = subprocess.check_output(em_env_cmd, shell=True, executable="/bin/bash")
-            for line in em_env.splitlines():
-                key, _, value = line.decode(errors='ignore').partition("=")
-                env[key] = value
-
-        print(">>> Emscripten environment loaded.")
-        return env
-
-    if MODE == "emscripten":
+def build_emscripten():
+    start_time = time.time()
+    try:
         env = get_emscripten_env()
-        run(["emcmake", "cmake", "--preset", "emscripten"], env=env, shell=(platform.system()=="Windows"))
-        run(["cmake", "--build", "--preset", "emscripten"], env=env, shell=(platform.system()=="Windows"))
+        run(["emcmake", "cmake", "--preset", "emscripten"], env=env)
+        run(["cmake", "--build", "--preset", "emscripten"], env=env)
+        build_dir = "out/web"
+        dest_dir = os.path.join("www", "editor")
+        os.makedirs(dest_dir, exist_ok=True)
 
-        BUILD_DIR = "out/web"
-        DEST_DIR = os.path.join("www", "editor")
-        os.makedirs(DEST_DIR, exist_ok=True)
-
-        for filename in os.listdir(BUILD_DIR):
+        for filename in os.listdir(build_dir):
             if filename.endswith((".html", ".js", ".wasm")):
-                src_path = os.path.join(BUILD_DIR, filename)
-                dst_path = os.path.join(DEST_DIR, "index.html" if filename.endswith(".html") else filename)
-                with open(src_path, "r" if filename.endswith(".html") else "rb") as f:
-                    content = f.read()
+                src_path = os.path.join(build_dir, filename)
+                dst_path = os.path.join(dest_dir, "index.html" if filename.endswith(".html") else filename)
                 if filename.endswith(".html"):
+                    with open(src_path, "r") as f:
+                        content = f.read()
                     content = content.replace("<canvas", "<canvas style='position:absolute;top:0;left:0;width:100%;height:100%;'")
                     if "<head>" in content:
                         content = content.replace("<head>", "<head><style>html,body{margin:0;padding:0;overflow:hidden;height:100%;}</style>")
@@ -70,27 +96,86 @@ try:
                         f.write(content)
                 else:
                     shutil.copy2(src_path, dst_path)
+        elapsed = time.time() - start_time
+        log_info(f"Emscripten build completed in {elapsed:.2f}s")
+        log_info(f"Open {os.path.join(dest_dir, 'index.html')} manually in a browser")
+    except Exception as e:
+        elapsed = time.time() - start_time
+        log_error(f"Emscripten build failed after {elapsed:.2f}s")
+        raise e
 
-        html_file = os.path.join(DEST_DIR, "index.html")
-        print(f"Open {html_file} manually in a browser")
-
-    elif MODE == "desktop":
-        BUILD_DIR = "out/desktop"
-        run(["cmake", "--preset", "desktop"], shell=(platform.system()=="Windows"))
-        run(["cmake", "--build", "--preset", "desktop"], shell=(platform.system()=="Windows"))
-
-        exe_file = os.path.join(BUILD_DIR, "bin", "CruzGui")
-        if platform.system() == "Windows":
-            exe_file += ".exe"
-
+def build_desktop_windows(config="Debug"):
+    start_time = time.time()
+    try:
+        build_dir = os.path.join("out", "desktop")
+        os.makedirs(build_dir, exist_ok=True)
+        run(["cmake", "-G", "Visual Studio 17 2022", "-A", "x64", "-S", ".", "-B", build_dir])
+        run(["cmake", "--build", build_dir, "--config", config])
+        
+        exe_file = os.path.join(build_dir, "bin", config, "CruzGui.exe")
         if not os.path.exists(exe_file):
-            print(f"Error: {exe_file} not found")
+            log_error(f"{exe_file} not found")
             sys.exit(1)
+        elapsed = time.time() - start_time
+        log_info(f"Desktop build completed in {elapsed:.2f}s: {exe_file}")
+        return exe_file
+    except Exception as e:
+        elapsed = time.time() - start_time
+        log_error(f"Desktop build failed after {elapsed:.2f}s")
+        raise e
 
-        run([exe_file] + ARGS)
-    else:
-        print(f"Unknown mode: {MODE}")
+def build_desktop_linux(config="Debug"):
+    start_time = time.time()
+    try:
+        build_dir = os.path.join("out", "desktop")
+        os.makedirs(build_dir, exist_ok=True)
+        run(["cmake", "-S", ".", "-B", build_dir, f"-DCMAKE_BUILD_TYPE={config}"])
+        run(["cmake", "--build", build_dir])
+        exe_file = os.path.join(build_dir, "CruzGui")
+        if not os.path.exists(exe_file):
+            log_error(f"{exe_file} not found")
+            sys.exit(1)
+        elapsed = time.time() - start_time
+        log_info(f"Desktop build completed in {elapsed:.2f}s: {exe_file}")
+        return exe_file
+    except Exception as e:
+        elapsed = time.time() - start_time
+        log_error(f"Desktop build failed after {elapsed:.2f}s")
+        raise e
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(f"Usage: {sys.argv[0]} <emscripten|desktop> [--config CONFIG] [--run|-r] [args...]")
         sys.exit(1)
 
-except KeyboardInterrupt:
-    print("Operation cancelled")
+    mode = sys.argv[1]
+    args = sys.argv[2:]
+
+    config = "Debug"
+    run_after_build = False
+    app_args = []
+
+    while args:
+        arg = args.pop(0)
+        if arg == "--run" or arg == "-r":
+            run_after_build = True
+        elif arg == "--config":
+            if args:
+                config = args.pop(0)
+        else:
+            app_args.append(arg)
+
+    system = platform.system()
+
+    if mode == "emscripten":
+        build_emscripten()
+    elif mode == "desktop":
+        if system == "Windows":
+            exe = build_desktop_windows(config)
+        else:
+            exe = build_desktop_linux(config)
+        if run_after_build:
+            run([exe] + app_args)
+    else:
+        log_error(f"Unknown mode: {mode}")
+        sys.exit(1)

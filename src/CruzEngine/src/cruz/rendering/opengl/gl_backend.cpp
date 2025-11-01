@@ -1,7 +1,7 @@
 #include "gl_backend.h"
 #include <glad/glad.h>
 #include <cruz/core/shader.h>
-#include <cruz/rendering/opengl/glshader.h>
+#include <cruz/rendering/opengl/gl_shader.h>
 #include <iostream>
 #include <GLFW/glfw3.h>
 
@@ -16,7 +16,7 @@ void GlBackend::Initialize() {
     }
 
     glEnable(GL_MULTISAMPLE);
-
+    
     platform->SetResizeCallback([this](int width, int height) {
         std::cout << "New size: " << width << " x " << height << "\n";
         Resize(width, height);
