@@ -1,8 +1,9 @@
 #include <cruz/core/application.h>
 #include <cruz/rendering/renderers/primitive/primitive_renderer.h>
 #include <cruz/core/time.h>
-#include <array>
 #include <cruz/core/orthographic_camera.h>
+#include <cmath>
+#include <cruz/core/vector.h>
 
 int main() {
     Application app(800, 600, "Primitive Example");
@@ -25,10 +26,11 @@ int main() {
         camera.height = float(newH);
     });
 
-    float quadX = 0;
-    float quadY = 0;
-    const float moveSpeed = 250.0f;
-
+    Vector2 quadPos(0.0f, 0.0f);
+    Vector2 quadVel(0.0f, 0.0f);
+    const float accel = 600.0f;
+    const float damping = 8.0f;
+    const float maxSpeed = 400.0f;
 
     app.SetUpdateCallback([&](float dt) {
         primitive.BeginFrame();
@@ -39,22 +41,26 @@ int main() {
         settings.depthTest = false;
         primitive.SetPipeline(settings);
 
-        if (platform->GetKey(KeyCode::W)) {
-            quadY += moveSpeed * Time::GetDeltaTime();
-        }
-        if (platform->GetKey(KeyCode::S)) {
-            quadY += -moveSpeed * Time::GetDeltaTime();
-        }
-        if (platform->GetKey(KeyCode::D)) {
-            quadX += moveSpeed * Time::GetDeltaTime();
-        }
-        if (platform->GetKey(KeyCode::A)) {
-            quadX += -moveSpeed * Time::GetDeltaTime();
+        Vector2 inputAccel(0.0f, 0.0f);
+        if (platform->GetKey(KeyCode::W)) inputAccel.y += accel;
+        if (platform->GetKey(KeyCode::S)) inputAccel.y -= accel;
+        if (platform->GetKey(KeyCode::D)) inputAccel.x += accel;
+        if (platform->GetKey(KeyCode::A)) inputAccel.x -= accel;
+
+        quadVel += inputAccel * dt;
+
+        float speed = quadVel.length();
+        if (speed > maxSpeed) {
+            quadVel = quadVel.normalized() * maxSpeed;
         }
 
+        quadVel -= quadVel * damping * dt;
+
+        quadPos += quadVel * dt;
+
         float size = 40.0f;
-        float col = platform->GetKey(KeyCode::W) ? 1 : 0;
-        primitive.DrawQuad(quadX, quadY, size, size, {1, col, 0, 1}); // kwadrat na środku
+        float col = platform->GetKey(KeyCode::W) ? 1.0f : 0.0f;
+        primitive.DrawQuad(quadPos.x, quadPos.y, size, size, {1, col, 0, 1});
 
         primitive.EndFrame();
     });
