@@ -25,8 +25,14 @@ public:
     void Draw(const std::vector<Vertex>& vertices) override;
     const Mat4& GetProjection() const override;
 
+    void UploadVertices(const std::vector<Vertex>& vertices) override;
+    void DrawUploadedVertices() override;
+
+
 private:
-    GLuint VAO = 0, VBO = 0;
+    GLuint vao = 0;
+    GLuint vbo = 0;
+    GLsizei vertexCount = 0;
     Mat4 projection;
 
     static EM_BOOL ResizeCallback(int eventType, const EmscriptenUiEvent* e, void* userData);

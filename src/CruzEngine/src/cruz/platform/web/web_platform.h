@@ -17,6 +17,7 @@ public:
     int GetKeyPressed(int key) override { return 0; }
     void SetMainLoop(void (*func)());
     void* GetProcAddress() override { return nullptr; }
+    void SetResizeCallback(std::function<void(int,int)> func) override {}
 
 private:
     bool shouldClose = false;
