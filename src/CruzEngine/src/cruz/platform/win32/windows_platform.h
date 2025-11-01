@@ -18,12 +18,18 @@ public:
     void MakeContextCurrent() override;
     int GetKeyPressed(int key) override;
     void* GetProcAddress() override;
-    void SetResizeCallback(std::function<void(int,int)> func) override;
+    uint64_t AddResizeCallback(std::function<void(int,int)> func) override;
+    void RemoveResizeCallback(uint64_t id);
+    bool GetKeyDown(KeyCode key);
+    bool GetKeyUp(KeyCode key);
+    bool GetKey(KeyCode key);
+
 
     GLFWwindow* GetWindow() { return window; }
 
 private:
     void InitializeWindow(int width, int height, const std::string& title);
+    int ToGLFWKey(KeyCode key);
 
     GLFWwindow* window = nullptr;
     std::function<void(int,int)> resizeCallback;

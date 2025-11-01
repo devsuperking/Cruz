@@ -1,15 +1,19 @@
 #pragma once
-#include <cruz/core/rendering_backend.h>
+#include <GLES3/gl3.h>
+#include <emscripten/html5.h>
+#include <vector>
 #include <cruz/core/mat4.h>
 #include <cruz/core/platform.h>
-#include <vector>
-#include <glad/glad.h>
+#include <cruz/core/rendering_backend.h>
+#include <cruz/core/shader.h>
+#include <cruz/core/vertex.h>
 
-class GlBackend : public RenderingBackend {
+class WebGlBackend : public RenderingBackend {
 public:
     void Initialize() override;
     void Resize(int width, int height) override;
-    void Update(float deltaTime) override;
+    void Update(float deltaTime) override {}
+
     void Clear(const float color[4]) override;
     void SetViewport(int x, int y, int width, int height) override;
     void SetPipeline(const PipelineSettings& settings) override;
@@ -19,17 +23,19 @@ public:
     void SetUniformMat4(Shader* shader, const std::string& name, const Mat4& mat) override;
 
     void Draw(const std::vector<Vertex>& vertices) override;
+    void Draw(const std::vector<ColoredVertex>& vertices) override;
+
     void UploadVertices(const std::vector<Vertex>& vertices) override;
     void DrawUploadedVertices() override;
 
     const Mat4& GetProjection() const override { return projection; }
 
-    ~GlBackend();
-
 private:
-    Mat4 projection;
-
     GLuint vao = 0;
     GLuint vbo = 0;
     GLsizei vertexCount = 0;
+    bool coloredVAO = false;
+    Mat4 projection;
+
+    static EM_BOOL ResizeCallback(int eventType, const EmscriptenUiEvent* e, void* userData);
 };

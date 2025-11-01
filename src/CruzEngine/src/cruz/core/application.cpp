@@ -6,8 +6,9 @@
 #include <emscripten/emscripten.h>
 #else
 #include "windows_platform.h"
-#include <cruz/rendering/opengl/gl_backend.h>
+#include <cruz/rendering/backends/opengl/gl_backend.h>
 #endif
+#include <cruz/core/time.h>
 
 static Application *g_app = nullptr;
 
@@ -49,15 +50,43 @@ void Application::Run()
 {
 #if defined(EMSCRIPTEN)
     g_app = this;
+
+    static double s_lastTime = 0.0;
+    s_lastTime = emscripten_get_now() / 1000.0;
+
+    // Główna pętla przeglądarkowa
+    auto mainLoop = []()
+    {
+        double now = emscripten_get_now() / 1000.0;
+        static double lastTime = now;
+
+        double dt = now - lastTime;
+        if (dt < 0.0 || dt > 1.0) dt = 0.016;
+        lastTime = now;
+
+        Time::SetDeltaTime(static_cast<float>(dt));
+
+        if (g_app && g_app->GetUpdateFunc())
+            g_app->GetUpdateFunc()(static_cast<float>(dt));
+    };
+
     if (auto web = dynamic_cast<WebPlatform *>(m_platform.get()))
     {
-        web->SetMainLoop(MainLoop);
+        web->SetMainLoop(mainLoop);
     }
+
 #else
-    int width, height;
+    using clock = std::chrono::high_resolution_clock;
+    auto lastTime = clock::now();
+
     while (!m_platform->WindowShouldClose())
     {
-        m_updateFunc(0.016f);
+        auto now = clock::now();
+        float dt = std::chrono::duration<float>(now - lastTime).count();
+        lastTime = now;
+
+        Time::SetDeltaTime(dt);
+        m_updateFunc(dt);
 
         m_platform->SwapBuffers();
         m_platform->PollEvents();

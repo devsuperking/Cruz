@@ -1,85 +1,64 @@
 #include <cruz/core/application.h>
-#include <cruz/core/shader.h>
-#include <vector>
-
-struct Renderer {
-    Shader* shader = nullptr;
-    bool initialized = false;
-    std::vector<Vertex> vertices;
-    const char* vertexShaderSrc;
-    const char* fragmentShaderSrc;
-
-    void Initialize(Application& app) {
-        if (!initialized) {
-            auto backend = app.GetBackend();
-            shader = backend->CreateShader(vertexShaderSrc, fragmentShaderSrc);
-
-            backend->UploadVertices(vertices);
-
-            initialized = true;
-        }
-    }
-
-    void Update(Application& app, float dt) {
-        auto backend = app.GetBackend();
-
-        if (!initialized)
-            Initialize(app);
-
-        float clearColor[4] = { 0.25f, 0.1f, 0.1f, 1.0f };
-        backend->Clear(clearColor);
-
-        backend->UseShader(shader);
-        backend->SetUniformMat4(shader, "uProjection", backend->GetProjection());
-
-        backend->DrawUploadedVertices();
-    }
-
-    ~Renderer() {
-        delete shader;
-    }
-};
+#include <cruz/rendering/renderers/primitive/primitive_renderer.h>
+#include <cruz/core/time.h>
+#include <array>
+#include <cruz/core/orthographic_camera.h>
 
 int main() {
-    Application app(800, 600, "Triangle Example");
+    Application app(800, 600, "Primitive Example");
 
-    std::vector<Vertex> vertices = {
-        { 0.0f,  0.5f, 0.0f },
-        {-0.5f, -0.5f, 0.0f },
-        { 0.5f, -0.5f, 0.0f }
-    };
+    auto backend = app.GetBackend();
+    auto platform = backend->GetPlatform();
 
-    static const char* vertexShaderSrc =
-#if defined(EMSCRIPTEN)
-        R"(layout(location = 0) in vec3 aPos;
-uniform mat4 uProjection;
-void main() { gl_Position = uProjection * vec4(aPos, 1.0); })";
-#else
-        R"(layout(location = 0) in vec3 aPos;
-uniform mat4 uProjection;
-void main() { gl_Position = uProjection * vec4(aPos, 1.0); })";
-#endif
+    int w, h;
+    platform->GetFramebufferSize(w, h);
 
-    static const char* fragmentShaderSrc =
-#if defined(EMSCRIPTEN)
-        R"(precision mediump float;
-out vec4 FragColor;
-void main() { FragColor = vec4(1.0, 0.5, 0.2, 1.0); })";
-#else
-        R"(out vec4 FragColor;
-void main() { FragColor = vec4(1.0, 0.5, 0.3, 1.0); })";
-#endif
+    OrthographicCamera camera{ float(w), float(h) };
+    camera.SetPosition(0.0f, 0.0f);
+    camera.orthoSize = 300.0f;
 
-    Renderer renderer;
-    renderer.vertices = vertices;
-    renderer.vertexShaderSrc = vertexShaderSrc;
-    renderer.fragmentShaderSrc = fragmentShaderSrc;
+    PrimitiveRenderer primitive(backend, &camera);
+    primitive.Initialize();
+
+    platform->AddResizeCallback([&](int newW, int newH){
+        camera.width  = float(newW);
+        camera.height = float(newH);
+    });
+
+    float quadX = 0;
+    float quadY = 0;
+    const float moveSpeed = 250.0f;
+
 
     app.SetUpdateCallback([&](float dt) {
-        renderer.Update(app, dt);
+        primitive.BeginFrame();
+        primitive.Clear({0.2f, 0.2f, 0.25f, 1.0f});
+
+        PrimitiveSettings settings;
+        settings.blend = true;
+        settings.depthTest = false;
+        primitive.SetPipeline(settings);
+
+        if (platform->GetKey(KeyCode::W)) {
+            quadY += moveSpeed * Time::GetDeltaTime();
+        }
+        if (platform->GetKey(KeyCode::S)) {
+            quadY += -moveSpeed * Time::GetDeltaTime();
+        }
+        if (platform->GetKey(KeyCode::D)) {
+            quadX += moveSpeed * Time::GetDeltaTime();
+        }
+        if (platform->GetKey(KeyCode::A)) {
+            quadX += -moveSpeed * Time::GetDeltaTime();
+        }
+
+        float size = 40.0f;
+        float col = platform->GetKey(KeyCode::W) ? 1 : 0;
+        primitive.DrawQuad(quadX, quadY, size, size, {1, col, 0, 1}); // kwadrat na środku
+
+        primitive.EndFrame();
     });
 
     app.Run();
-
     return 0;
 }

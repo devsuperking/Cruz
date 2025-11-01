@@ -30,10 +30,13 @@ public:
     virtual void SetUniformMat4(Shader* shader, const std::string& name, const Mat4& mat) = 0;
 
     virtual void Draw(const std::vector<Vertex>& vertices) = 0;
+    virtual void Draw(const std::vector<ColoredVertex>& vertices) = 0;
+
     virtual void UploadVertices(const std::vector<Vertex>& vertices) = 0;
     virtual void DrawUploadedVertices() = 0;
 
     void SetPlatform(Platform* platform) { this->platform = platform; }
+    Platform* GetPlatform() { return this->platform; }
     virtual const Mat4& GetProjection() const = 0;
 
 protected:

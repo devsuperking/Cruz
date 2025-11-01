@@ -17,8 +17,21 @@ public:
     int GetKeyPressed(int key) override { return 0; }
     void SetMainLoop(void (*func)());
     void* GetProcAddress() override { return nullptr; }
-    void SetResizeCallback(std::function<void(int,int)> func) override {}
+
+    uint64_t AddResizeCallback(std::function<void(int,int)> func) override;
+    void RemoveResizeCallback(uint64_t id) override;
+
+    bool GetKeyDown(KeyCode key) override;
+    bool GetKeyUp(KeyCode key) override;
+    bool GetKey(KeyCode key) override;
+
 
 private:
     bool shouldClose = false;
+    std::unordered_map<KeyCode, bool> keyState;
+    std::unordered_map<KeyCode, bool> keyDownState;
+    std::unordered_map<KeyCode, bool> keyUpState;
+
+    static KeyCode ConvertKeyStringToKeyCode(const char* keyStr);
+    void SetKeyboardCallbacks();
 };

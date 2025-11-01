@@ -14,7 +14,22 @@ Mat4 Mat4::Ortho(float left, float right, float bottom, float top, float near, f
     m.data[13] = -(top + bottom) / (top - bottom);
     m.data[14] = -(far + near) / (far - near);
     m.data[15] = 1.0f;
+    return m;
+}
 
+Mat4 Mat4::Translate(float x, float y, float z) {
+    Mat4 m;
+    m.data[12] = x;
+    m.data[13] = y;
+    m.data[14] = z;
+    return m;
+}
+
+Mat4 Mat4::Scale(float x, float y, float z) {
+    Mat4 m;
+    m.data[0] = x;
+    m.data[5] = y;
+    m.data[10] = z;
     return m;
 }
 
